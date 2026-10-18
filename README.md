@@ -14,6 +14,7 @@ Este projeto estima a posição de cadeiras no plano do chão a partir de imagen
 | `annotations/camera_1.json` … `camera_4.json` | Detecções geradas localmente; esta pasta não é enviada ao Git. |
 | `yolo26n.pt` | Nome de arquivo de pesos usado por padrão para gerar anotações; o arquivo não é enviado ao Git. |
 | `docs/groups_xy.png` | Gráfico XY gerado por `main.py` e exibido neste README. |
+| `docs/cameras_groups.png` | Montagem das quatro câmeras com as caixas das cadeiras coloridas por grupo. |
 
 O ambiente `.venv/`, arquivos de cache, a pasta `annotations/` e todos os arquivos `*.pt` ficam apenas na máquina local. A imagem em `docs/groups_xy.png` foi gerada com anotações locais produzidas anteriormente com `yolo26x.pt`; ao gerar novas anotações com outro modelo, o resultado pode mudar.
 
@@ -86,11 +87,13 @@ O terminal mostra o número de detecções de cadeiras, o número de grupos e, p
 
 Com os JSONs usados para gerar a figura deste README, a execução imprimiu **46 detecções de cadeiras e 13 grupos**. Esses números podem mudar após gerar novas anotações ou trocar as imagens/modelo.
 
-As janelas gráficas exibem: (1) pontos XY por detecção, retas projetadas e posições de **todos** os grupos; (2) a matriz de distâncias em metros; e (3) as quatro imagens com caixas e eixos verticais **somente das cadeiras**. Cada grupo `G0`, `G1` etc. recebe a mesma cor no gráfico e nas imagens; o formato do ponto XY identifica a câmera. `main.py` salva a figura XY em `docs/groups_xy.png` a cada execução. As janelas usam o backend `QtAgg` e exigem uma sessão gráfica.
+As janelas gráficas exibem: (1) pontos XY por detecção, retas projetadas e posições de **todos** os grupos; (2) a matriz de distâncias em metros; e (3) as quatro imagens com caixas e eixos verticais **somente das cadeiras**. Cada grupo `G0`, `G1` etc. recebe a mesma cor no gráfico e nas imagens; o formato do ponto XY identifica a câmera. `main.py` salva o gráfico XY em `docs/groups_xy.png` e a montagem das câmeras em `docs/cameras_groups.png` a cada execução. As janelas usam o backend `QtAgg` e exigem uma sessão gráfica.
 
 ![Posições XY e grupos de cadeiras](docs/groups_xy.png)
 
-Em um servidor sem interface gráfica, `MPLBACKEND=Agg python main.py` calcula os grupos e atualiza `docs/groups_xy.png` sem abrir janelas.
+![Quatro câmeras sintéticas com caixas das cadeiras coloridas por grupo](docs/cameras_groups.png)
+
+Em um servidor sem interface gráfica, `MPLBACKEND=Agg python main.py` calcula os grupos e atualiza as duas imagens em `docs/` sem abrir janelas.
 
 ## Premissas e limites atuais
 

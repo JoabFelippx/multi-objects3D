@@ -17,6 +17,7 @@ CAMERAS = (1, 2, 3, 4)
 CAM_MARKERS = {1: "o", 2: "s", 3: "^", 4: "D"}
 GROUP_COLOR_ORDER = (0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19)
 XY_FIGURE_PATH = PROJECT_ROOT / "docs" / "groups_xy.png"
+CAMERAS_FIGURE_PATH = PROJECT_ROOT / "docs" / "cameras_groups.png"
 
 
 def group_color(group_id):
@@ -486,6 +487,11 @@ def main():
             ax.imshow(cv2.cvtColor(camera_images[cam], cv2.COLOR_BGR2RGB))
             ax.set_title(f"Câmera {cam}: cadeiras por grupo")
         ax.axis("off")
+
+    fig_images.tight_layout()
+    CAMERAS_FIGURE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    fig_images.savefig(CAMERAS_FIGURE_PATH, dpi=180)
+    print(f"Imagens das câmeras salvas em: {CAMERAS_FIGURE_PATH}")
 
     if matplotlib.get_backend().lower() != "agg":
         plt.show()

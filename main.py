@@ -10,17 +10,21 @@ import matplotlib
 matplotlib.use(os.environ.get("MPLBACKEND", "QtAgg"))
 
 import matplotlib.pyplot as plt
+from matplotlib.colors import to_rgb
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
 
 
 CAMERAS = (1, 2, 3, 4)
 CAM_MARKERS = {1: "o", 2: "s", 3: "^", 4: "D"}
 GROUP_COLOR_ORDER = (0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19)
+GROUP_COLOR_OVERRIDES = {7: "#D000A8"}
 XY_FIGURE_PATH = PROJECT_ROOT / "docs" / "groups_xy.png"
 CAMERAS_FIGURE_PATH = PROJECT_ROOT / "docs" / "cameras_groups.png"
 
 
 def group_color(group_id):
+    if group_id in GROUP_COLOR_OVERRIDES:
+        return to_rgb(GROUP_COLOR_OVERRIDES[group_id])
     return matplotlib.colormaps["tab20"](GROUP_COLOR_ORDER[group_id % len(GROUP_COLOR_ORDER)])[:3]
 
 class ObjectDatas:

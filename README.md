@@ -79,7 +79,7 @@ Cada JSON tem metadados (`camera_id`, `image`, `width`, `height`, `num_objects`)
 2. Usa o ponto no **centro da borda inferior** da caixa (`u = (x1+x2)/2`, `v = y2`) como aproximação do contato do objeto com o chão. Com `nK⁻¹` e `rt_inv`, transforma esse pixel em um raio no mundo e o intersecta com `Z = 0` para obter um ponto XY por detecção.
 3. Projeta a direção vertical do mundo na imagem usando `nK` e a rotação de `rt`. A reta que passa pelo centro da caixa e por esse ponto de fuga vira uma reta no plano XY pela homografia do chão `H = nK [r₁ r₂ t]`. Essas retas auxiliam a associação entre câmeras.
 4. Mantém só detecções cuja `class_name` é exatamente `chair`. Calcula a matriz de distâncias euclidianas entre seus pontos XY.
-5. Para cada par de cadeiras visto por **câmeras diferentes**, calcula a interseção das retas no chão. Descarta pares com ângulo menor que 12° ou cuja interseção fique a mais de 1,2 m de qualquer um dos dois pontos XY. Os pares restantes são ordenados pelo custo (soma desses dois desvios).
+5. Para cada par de cadeiras visto por **câmeras diferentes**, calcula a interseção das retas no chão. Descarta pares com ângulo menor que 12° ou cuja interseção fique a mais de 0,20 m de qualquer um dos dois pontos XY. Os pares restantes são ordenados pelo custo (soma desses dois desvios).
 6. Une grupos em ordem de custo somente quando não repetem câmera, todos os pares do grupo proposto têm interseção válida e cada interseção fica a até 0,5 m da mediana das interseções do grupo. Detecções sem par válido permanecem em grupos unitários.
 7. Para grupos com duas ou mais detecções, estima o XY final por mínimos quadrados sobre as retas do grupo. Para grupos unitários, mantém o XY da própria detecção.
 

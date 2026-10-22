@@ -4,13 +4,12 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-
 from is_wire.core import Channel, Message, Subscription
 from is_msgs.image_pb2 import ObjectAnnotations
 from sklearn.cluster import DBSCAN
 
 CAMERAS = [1, 2, 3, 4]
-class_target = ["chair"]
+class_target = ["chair", "person"]
 CALIB_PATH_RAW = Path(
     os.environ.get(
         "CALIB_PATH_RAW", Path(__file__).resolve().parent / "data" / "calibration"
@@ -218,6 +217,7 @@ class ObjectDatas:
         self.cam_id = None
         self.class_name = None
         self.bboxe = []
+        self.bbox_raw = []
 
         self.center_point_2d = []
         self.center_point_3d = []
@@ -315,6 +315,15 @@ def message_to_objects(messages, cameras, z_plane=0.0):
             obj.cam_id = cam_id
             obj.class_name = class_name
             obj.bboxe = np.array([x1, y1, x2, y2])
+            raw_points = np.array([[vertex.x, vertex.y] for vertex in vertices])
+            obj.bbox_raw = np.array(
+                [
+                    raw_points[:, 0].min(),
+                    raw_points[:, 1].min(),
+                    raw_points[:, 0].max(),
+                    raw_points[:, 1].max(),
+                ]
+            )
 
             obj.center_point_2d = to_projection
             obj.center_point_3d = point_in_ground_plane
@@ -542,6 +551,69 @@ def estimate_cluster_height(cluster, objects, max_error=MAX_HEIGHT_REPROJECTION_
     return float(np.median(heights))
 
 
+def resolve_ambiguous_cluster(cluster, objects):
+    """Keep the best supported detection when a camera appears twice in a cluster."""
+    if not cluster.ambiguous:
+        return cluster
+
+    center = np.median(cluster.points, axis=0)
+    indices_by_camera = {}
+    for index in cluster.object_indices:
+        indices_by_camera.setdefault(objects[index].cam_id, []).append(index)
+
+    selected = set()
+    for candidates in indices_by_camera.values():
+        best = max(
+            candidates,
+            key=lambda index: (
+                sum(index in pair for pair in cluster.pairs),
+                -np.linalg.norm(objects[index].center_point_3d[:2] - center),
+            ),
+        )
+        selected.add(best)
+
+    retained = [
+        (point, pair)
+        for point, pair in zip(cluster.points, cluster.pairs)
+        if pair[0] in selected and pair[1] in selected
+    ]
+    if len(retained) < CLUSTER_MIN_SAMPLES:
+        return None
+
+    cluster.points = np.array([point for point, _ in retained])
+    cluster.pairs = [pair for _, pair in retained]
+    cluster.object_indices = sorted(selected)
+    cluster.camera_ids = [objects[index].cam_id for index in cluster.object_indices]
+    cluster.ambiguous = False
+    return cluster
+
+
+def match_objects(objects):
+    matrix = intersection_matrix(objects)
+    clusters = cluster_intersections(
+        matrix, objects, eps=CLUSTER_EPS, min_samples=CLUSTER_MIN_SAMPLES
+    )
+
+    valid_clusters = []
+    for cluster in clusters:
+        cluster = resolve_ambiguous_cluster(cluster, objects)
+        if cluster is None:
+            continue
+
+        position = estimate_cluster_position(cluster, objects)
+        if position is None:
+            continue
+        cluster.estimation_point = position
+
+        height = estimate_cluster_height(cluster, objects)
+        if height is None:
+            continue
+        cluster.height = height
+        valid_clusters.append(cluster)
+
+    return valid_clusters
+
+
 def grupos_para_anotacoes_3d(clusters):
     annotations = ObjectAnnotations()
 
@@ -573,34 +645,9 @@ def main():
     while True:
         messages = stream.get_messages()
         objects = message_to_objects(messages, calibs_cam, GROUND_Z)
-        matrix = intersection_matrix(objects)
+        valid_clusters = match_objects(objects)
 
-        clusters = cluster_intersections(
-            matrix, objects, eps=CLUSTER_EPS, min_samples=CLUSTER_MIN_SAMPLES
-        )
-
-        valid_clusters = []
-
-        for idx, cluster in enumerate(clusters):
-            if cluster.ambiguous:
-                continue
-
-            position = estimate_cluster_position(cluster, objects)
-
-            if position is None:
-                continue
-
-            cluster.estimation_point = position
-
-            height = estimate_cluster_height(cluster, objects)
-
-            if height is None:
-                continue
-
-            cluster.height = height
-
-            valid_clusters.append(cluster)
-
+        for idx, cluster in enumerate(valid_clusters):
             print(f"\nCluster {idx}")
             print(f"Classe: {cluster.class_name}")
             print(f"Posição XY: {cluster.estimation_point}")

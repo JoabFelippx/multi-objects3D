@@ -1,5 +1,7 @@
 numpy
 opencv-python
+matplotlib
 scikit-learn
+scipy
 is-wire-sea
 is-msgs-sea
